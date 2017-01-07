@@ -8,3 +8,6 @@ What makes this script different from the [many](http://wiki.mikrotik.com/wiki/S
 * Custom DNS entries cannot be accidentally overridden by DHCP
 * Comments are used to distinguish between custom DNS entries and DHCP DNS entries
 * Multiple copies of the script can be run to work with more than one DHCP server
+
+### RTTTL converter/script generator
+Because your router has a beep command, and you must use it to its full potential. [Access it here.](https://arktronic.github.io/mikrotik-scripts/rtttl.html)
