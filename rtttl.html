@@ -22,8 +22,8 @@
             if (rtttlParts.length != 3) throw "RTTTL is invalid because it does not have three colon-separated sections";
 
             tone.name = rtttlParts[0].trim();
-            var controlSection = rtttlParts[1].replace(/\s/, '').toLowerCase();
-            var noteSection = rtttlParts[2].replace(/\s/, '').toLowerCase();
+            var controlSection = rtttlParts[1].replace(/\s/g, '').toLowerCase();
+            var noteSection = rtttlParts[2].replace(/\s/g, '').toLowerCase();
 
             // parse control section
             var controlParts = controlSection.split(',');
@@ -102,6 +102,7 @@
 
             oscillator = audioCtx.createOscillator();
             oscillator.frequency.value = 0;
+            oscillator.type = 'triangle';
             oscillator.start();
             oscillator.onended = stopPlayback;
             oscillator.connect(channel);
@@ -111,8 +112,8 @@
                 if (notes[i].frequency > 0) {
                     oscillator.frequency.setValueAtTime(notes[i].frequency, time);
                     channel.gain.setValueAtTime(0, time);
-                    channel.gain.linearRampToValueAtTime(1, time + 0.001);
-                    channel.gain.linearRampToValueAtTime(1, time + notes[i].duration / 1000.0 - 0.05);
+                    channel.gain.linearRampToValueAtTime(1, time + 0.005);
+                    channel.gain.linearRampToValueAtTime(1, time + notes[i].duration / 1000.0 - 0.01);
                     channel.gain.linearRampToValueAtTime(0, time + notes[i].duration / 1000.0)
                 }
                 time += notes[i].duration / 1000.0 + 0.01;
