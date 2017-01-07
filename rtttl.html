@@ -1,0 +1,175 @@
+<html>
+
+<head>
+    <title>RTTTL to RouterOS Script Generator</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" crossorigin="anonymous"></script>
+    <script>
+        function parseRtttl(rtttl) {
+            var allPitches = 'c,c#,d,d#,e,f,f#,g,g#,a,a#,b'.split(',');
+            var tone = {
+                name: '',
+                control: {
+                    octave: 6,
+                    duration: 4,
+                    bpm: 63
+                },
+                notes: []
+            };
+
+            var rtttlParts = rtttl.split(':');
+            if (rtttlParts.length != 3) throw "RTTTL is invalid because it does not have three colon-separated sections";
+
+            tone.name = rtttlParts[0].trim();
+            var controlSection = rtttlParts[1].replace(/\s/, '').toLowerCase();
+            var noteSection = rtttlParts[2].replace(/\s/, '').toLowerCase();
+
+            // parse control section
+            var controlParts = controlSection.split(',');
+            for (var i = 0; i < controlParts.length; i++) {
+                var ctl = controlParts[i];
+                var ctlParts = ctl.split('=');
+                if (ctlParts.length != 2) throw "RTTTL is invalid because it has a malformed control section";
+                ctlParts[1] = parseInt(ctlParts[1]);
+                switch (ctlParts[0]) {
+                    case 'o':
+                        tone.control.octave = ctlParts[1];
+                        break;
+                    case 'd':
+                        tone.control.duration = ctlParts[1];
+                        break;
+                    case 'b':
+                        tone.control.bpm = ctlParts[1];
+                        break;
+                }
+            }
+
+            // parse note section
+            var noteParts = noteSection.split(',');
+            for (var i = 0; i < noteParts.length; i++) {
+                var note = noteParts[i];
+                var matches = /^\.?(\d+)?\.?(p|c|c#|d|d#|e|f|f#|g|g#|a|a#|b|h)\.?(\d)?\.?$/.exec(note);
+                if (matches == null) continue;
+
+                var duration = (matches[1] || tone.control.duration);
+                var pitch = matches[2].replace('h', 'b');
+                var octave = (matches[3] || tone.control.octave);
+                var specialMultiplier = (note.indexOf('.') > -1 ? 1.5 : 1);
+
+                var msec = 60.0 / tone.control.bpm * 4 * 1000 / duration * specialMultiplier;
+                var frequency;
+                if (pitch == 'p') {
+                    frequency = 0;
+                }
+                else {
+                    frequency = 440 * Math.pow(Math.pow(2, 1.0 / 12), allPitches.indexOf(pitch) - 9) * Math.pow(2, octave - 4);
+                }
+
+                tone.notes.push({ frequency: frequency, duration: msec });
+            }
+
+            return tone;
+        }
+
+        function createRosScript(notes) {
+            var script = '';
+            for (var i = 0; i < notes.length; i++) {
+                if (notes[i].frequency == 0) {
+                    script += ':delay ' + Math.round(notes[i].duration) + 'ms;\n\n';
+                } else {
+                    script += ':beep frequency=' + Math.round(notes[i].frequency) + ' length=' + Math.round(notes[i].duration) + 'ms;\n:delay ' + Math.round(notes[i].duration + 10) + 'ms;\n';
+                }
+            }
+            return script;
+        }
+    </script>
+    <style type="text/css">
+        body {
+            background-color: #222;
+            color: #ccc;
+            font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        }
+        .container {
+            background-color: #444;
+            border-radius: 3px;
+            margin: 0 auto;
+            padding: 2px 14px 12px;
+            width: 1020px;
+        }
+        h1 {
+            margin-bottom: 0;
+        }
+        a, a:visited {
+            color: #77f;
+            text-decoration: none;
+        }
+        a:hover, a:active {
+            text-decoration: underline;
+        }
+        label {
+            display: block;
+            font-size: 1.1em;
+            padding: 12px 0 4px;
+        }
+        input[type=text] {
+            background-color: #eee;
+            border: 1px solid #222;
+            border-radius: 3px;
+            display: block;
+            font-size: 1.2em;
+            padding: 6px;
+        }
+        .full-width {
+            width: 100%;
+        }
+        #previewbutton {
+            float: right;
+            margin-top: 8px;
+        }
+        textarea {
+            background-color: #ccc;
+            border: 1px solid #222;
+            border-radius: 3px;
+            display: block;
+            font-size: 1.2em;
+            padding: 6px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RTTTL to MikroTik RouterOS Script Generator</h1>
+        <hr />
+
+        <div>
+            <button id="previewbutton" disabled="disabled">Preview</button>
+            <label for="inputbox">Ringtone</label>
+            <input type="text" class="full-width" id="inputbox" />
+        </div>
+
+        <br />
+
+        <label for="outputbox">RouterOS script</label>
+        <textarea id="outputbox" class="full-width" rows="20" readonly="readonly"></textarea>
+
+        <br /><hr />
+        <small>Copyright Sasha Kotlyar. Source code and license information are <a href="https://github.com/arktronic/mikrotik-scripts">here</a>.</small>
+    </div>
+    <script>
+        $('#inputbox').on('input change', function() {
+            var input = $('#inputbox').val();
+            if (input.length == 0) {
+                $('#outputbox').val('');
+            } else {
+                try {
+                    var parsed = parseRtttl(input);
+                    var script = createRosScript(parsed.notes);
+                    $('#outputbox').val(script);
+                } catch (e) {
+                    $('#outputbox').val('ERROR: ' + e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
