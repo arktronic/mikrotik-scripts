@@ -4,6 +4,8 @@
     <title>RTTTL to RouterOS Script Generator</title>
     <script src="https://code.jquery.com/jquery-1.12.4.min.js" crossorigin="anonymous"></script>
     <script>
+        var audioCtx, oscillator, master, channel;
+
         function parseRtttl(rtttl) {
             var allPitches = 'c,c#,d,d#,e,f,f#,g,g#,a,a#,b'.split(',');
             var tone = {
@@ -81,6 +83,59 @@
             }
             return script;
         }
+
+        function playNotes(notes) {
+            var constructor = (window.AudioContext || window.webkitAudioContext);
+            if (constructor == null) {
+                throw "This browser does not support Web Audio.";
+            }
+
+            audioCtx = new constructor();
+            
+            master = audioCtx.createGain();
+            master.gain.value = 0.3;
+            master.connect(audioCtx.destination);
+
+            channel = audioCtx.createGain();
+            channel.connect(master);
+            channel.gain.value = 0;
+
+            oscillator = audioCtx.createOscillator();
+            oscillator.frequency.value = 0;
+            oscillator.start();
+            oscillator.onended = stopPlayback;
+            oscillator.connect(channel);
+
+            var time = audioCtx.currentTime + 0.1;
+            for (var i = 0; i < notes.length; i++) {
+                if (notes[i].frequency > 0) {
+                    oscillator.frequency.setValueAtTime(notes[i].frequency, time);
+                    channel.gain.setValueAtTime(0, time);
+                    channel.gain.linearRampToValueAtTime(1, time + 0.001);
+                    channel.gain.linearRampToValueAtTime(1, time + notes[i].duration / 1000.0 - 0.05);
+                    channel.gain.linearRampToValueAtTime(0, time + notes[i].duration / 1000.0)
+                }
+                time += notes[i].duration / 1000.0 + 0.01;
+            }
+            oscillator.stop(time);
+        }
+
+        function stopPlayback() {
+            try {
+                if (oscillator != null) {
+                    oscillator.stop();
+                    oscillator = null;
+                }
+                if (audioCtx != null) {
+                    audioCtx.close();
+                    audioCtx = null;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            
+            $('#previewbutton').text('Preview');
+        }
     </script>
     <style type="text/css">
         body {
@@ -142,7 +197,7 @@
         <hr />
 
         <div>
-            <button id="previewbutton" disabled="disabled">Preview</button>
+            <button id="previewbutton">Preview</button>
             <label for="inputbox">Ringtone</label>
             <input type="text" class="full-width" id="inputbox" />
         </div>
@@ -168,6 +223,24 @@
                 } catch (e) {
                     $('#outputbox').val('ERROR: ' + e);
                 }
+            }
+        });
+
+        $('#previewbutton').click(function() {
+            if ($('#previewbutton').text() == 'Stop') {
+                stopPlayback();
+                return;
+            }
+
+            var input = $('#inputbox').val();
+            if (input.length == 0) return;
+
+            try {
+                var parsed = parseRtttl(input);
+                playNotes(parsed.notes);
+                $('#previewbutton').text('Stop');
+            } catch (e) {
+                alert('ERROR: ' + e);
             }
         });
     </script>
