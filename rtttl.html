@@ -112,13 +112,13 @@
                 if (notes[i].frequency > 0) {
                     oscillator.frequency.setValueAtTime(notes[i].frequency, time);
                     channel.gain.setValueAtTime(0, time);
-                    channel.gain.linearRampToValueAtTime(1, time + 0.005);
+                    channel.gain.linearRampToValueAtTime(1, time + 0.01);
                     channel.gain.linearRampToValueAtTime(1, time + notes[i].duration / 1000.0 - 0.01);
                     channel.gain.linearRampToValueAtTime(0, time + notes[i].duration / 1000.0)
                 }
                 time += notes[i].duration / 1000.0 + 0.01;
             }
-            oscillator.stop(time);
+            oscillator.stop(time + 0.03);
         }
 
         function stopPlayback() {
