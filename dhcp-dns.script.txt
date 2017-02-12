@@ -15,11 +15,11 @@
 #----- END OF CONFIG -----#
 
 :local cleanHostname do={
-  :if ($1 ~ "^[a-zA-Z0-9]+[a-zA-Z0-9\\-]*[a-zA-Z0-9]+\$") do={
+  :local max ([:len $1] - 1);
+  :if ($1 ~ "^[a-zA-Z0-9]+[a-zA-Z0-9\\-]*[a-zA-Z0-9]+\$" && ([:pick $1 ($max)] != "\00")) do={
     :return ($1);
   } else={
     :local cleaned "";
-    :local max ([:len $1] - 1);
     :for i from=0 to=$max do={
       :local c [:pick $1 $i]
       :if ($c ~ "^[a-zA-Z0-9]{1}\$") do={
