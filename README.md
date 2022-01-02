@@ -18,6 +18,12 @@ What makes this script different from the [many](http://wiki.mikrotik.com/wiki/S
 
 <hr />
 
+### Dual WAN failover: `wan-dhcp-failover.rsc`
+
+This script can be used when both WAN interfaces use DHCP for their public IPs and gateways. It updates static routes for the ping targets accordingly. Note, this script has only been tested in RouterOS 7.
+
+<hr />
+
 ### dns.he.net dynamic DNS updater: `hurricane-electric-ddns.rsc`
 
 A simple, non-spammy script to update DDNS hosted at Hurricane Electric. It caches the last known public IP and doesn't request an update unless that value changes.
